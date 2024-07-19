@@ -1,0 +1,253 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+  /* background-color: black; */
+  color: black;
+  font-family: sans-serif;
+  font-size: 1.2rem;
+}
+
+.login__container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.login__container > h1 {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  text-decoration: underline;
+}
+
+.login__input__container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.5rem;
+}
+
+.login__input {
+  display: flex;
+  width: 20rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  padding-left: 1rem;
+  font-size: 1.2rem;
+}
+
+.login__btn {
+  width: 20rem;
+  height: 3rem;
+  cursor: pointer;
+  background-color: rgb(158, 9, 9);
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+}
+
+.main__container {
+  width: 100%;
+  height: 100%;
+}
+
+.chat__heading__main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  /* font-size: 2rem; */
+  font-weight: 500;
+  padding: 0.4rem;
+}
+
+.chat__container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  width: 100%;
+  flex-direction: row-reverse;
+  height: 100%;
+  background-color: #171717;
+}
+
+.chat__section2 {
+  width: 100%;
+  background-color: #202c33;
+  padding: 0;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: sans-serif;
+  padding-left: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 2.5rem;
+  border-bottom: 1px solid white;
+}
+
+.chat__section2 > h1 {
+  font-size: 2rem;
+}
+
+.chat__logout {
+  position: absolute;
+  right: 2rem;
+  bottom: 1rem;
+}
+
+.log__out {
+  height: 1.5rem;
+  width: 5rem;
+  cursor: pointer;
+  background-color: rgb(237, 63, 63);
+  color: white;
+  border: none;
+}
+.chat__section2 > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.chat__input__section3 {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  position: relative;
+  background-color: #212121;
+}
+
+.chat__input__section3 > textarea {
+  padding: 0.5rem;
+  outline: none;
+  font-size: 1.2rem;
+  min-height: 40px;
+  max-height: 110px;
+  max-width: 100%;
+  min-width: 100%;
+  overflow-y: auto;
+  resize: none;
+  height: 48px;
+  background: #2f2f2f;
+  border-radius: 51px;
+  color: white;
+  padding-left: 1rem;
+}
+
+.chat__input__section3 > button {
+  background-color: white;
+  color: black;
+  padding: 0.5rem;
+  cursor: pointer;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  position: absolute;
+  right: 2rem;
+  top: 1.5rem;
+}
+
+.chat__input__container {
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #212121;
+}
+
+.chat__messages {
+  height: 33.7rem;
+  /* overflow: auto; */
+  width: 100%;
+  position: relative;
+  background-color: #212121;
+}
+
+.messageBox {
+  background-color: gainsboro;
+  width: 70%;
+  padding: 1vmax;
+  margin: 1vmax;
+  border-radius: 0.5vmax;
+  -webkit-border-radius: 0.5vmax;
+  -moz-border-radius: 0.5vmax;
+  -ms-border-radius: 0.5vmax;
+  -o-border-radius: 0.5vmax;
+  display: inline-block;
+  clear: both;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.5rem;
+  font-size: 1rem;
+}
+
+.right {
+  float: right;
+  background-color: #005c4b;
+  color: white;
+}
+.left {
+  float: left;
+  background-color: #202c33;
+  color: white;
+}
+
+.users__container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background-color: #171717;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  width: 15rem;
+}
+
+.users__data > button {
+  border: none;
+  font-size: 1.1rem;
+  background-color: white;
+  cursor: pointer;
+  padding: 0.3rem;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  border-top: 1px solid black;
+  background-color: #171717;
+  color: white;
+  font-family: cursive;
+}
+
+.users__data .active {
+  background-color: #212121;
+  color: white;
+  border-radius: 8px;
+  width: 12rem;
+  height: 100%;
+  -webkit-border-radius: 8px;
+  -moz-border-radius: 8px;
+  -ms-border-radius: 8px;
+  -o-border-radius: 8px;
+  border: none;
+}
