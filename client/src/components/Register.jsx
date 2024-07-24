@@ -37,7 +37,7 @@ const Register = () => {
           if (registerRes.status === 201) {
             try {
               const res = await axios.post(
-                "http://127.0.0.1:8001/generate-socket-id",
+                "http://127.0.0.1:8001/api/v1/generate-socketId",
                 { email },
                 { withCredentials: true }
               );

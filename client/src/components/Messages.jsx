@@ -3,19 +3,19 @@ import moment from "moment";
 
 // eslint-disable-next-line react/prop-types
 const Messages = ({ user, time_date, message, classs }) => {
-  if (user) {
+  if (user && user !== "date") {
     return (
       <main className={`messageBox ${classs}`}>
-        <span
+        {/* <span
           style={{ color: " #06cf9c", fontWeight: "600" }}
-        >{`${user}`}</span>
+        >{`${user}`}</span> */}
         <span>{`${message}`}</span>
         <span
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            fontSize: "15px",
+            fontSize: "10px",
           }}
         >
           {" "}
@@ -23,8 +23,25 @@ const Messages = ({ user, time_date, message, classs }) => {
         </span>
       </main>
     );
+  } else if (user === "date") {
+    return <main className={`messageBox ${classs}`}>{message}</main>;
   } else {
-    return <main className={`messageBox ${classs}`}>{`${message}`}</main>;
+    return (
+      <main className={`messageBox ${classs}`}>
+        <span>{`${message}`}</span>
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            fontSize: "10px",
+            paddingLeft: "2rem",
+          }}
+        >
+          {`${moment(time_date).format("LT")}`}
+        </span>
+      </main>
+    );
   }
 };
 

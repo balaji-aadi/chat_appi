@@ -11,6 +11,46 @@ body {
   font-size: 1.2rem;
 }
 
+/* For WebKit browsers (Chrome, Safari) */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+}
+
+.loader {
+  width: 40px;
+  height: 40px;
+  --c: no-repeat linear-gradient(orange 0 0);
+  background: var(--c), var(--c), var(--c), var(--c);
+  background-size: 21px 21px;
+  animation: l5 1.5s infinite cubic-bezier(0.3, 1, 0, 1);
+}
+@keyframes l5 {
+  0% {
+    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+  }
+  33% {
+    background-position: 0 0, 100% 0, 100% 100%, 0 100%;
+    width: 60px;
+    height: 60px;
+  }
+  66% {
+    background-position: 100% 0, 100% 100%, 0 100%, 0 0;
+    width: 60px;
+    height: 60px;
+  }
+  100% {
+    background-position: 100% 0, 100% 100%, 0 100%, 0 0;
+  }
+}
+
 .login__container {
   width: 100%;
   height: 100vh;
@@ -27,6 +67,7 @@ body {
   justify-content: center;
   margin-bottom: 1rem;
   text-decoration: underline;
+  color: #007fd4;
 }
 
 .login__input__container {
@@ -53,7 +94,7 @@ body {
   width: 20rem;
   height: 3rem;
   cursor: pointer;
-  background-color: rgb(158, 9, 9);
+  background-color: #007fd4;
   color: white;
   font-size: 1rem;
   font-weight: 600;
@@ -72,6 +113,22 @@ body {
   /* font-size: 2rem; */
   font-weight: 500;
   padding: 0.4rem;
+  height: 3rem;
+  color: white;
+}
+
+.chat__heading__main__container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  /* font-size: 2rem; */
+  font-weight: 500;
+  padding: 0.4rem;
+  color: white;
+}
+
+.users__containers {
+  width: 40%;
 }
 
 .chat__container {
@@ -95,9 +152,15 @@ body {
   padding-left: 1rem;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  height: 2.5rem;
+  justify-content: space-between;
+  height: 3.5rem;
   border-bottom: 1px solid white;
+}
+
+.phone {
+  padding-right: 2rem;
+  cursor: pointer;
+  font-size: 1.2rem;
 }
 
 .chat__section2 > h1 {
@@ -148,7 +211,29 @@ body {
   background: #2f2f2f;
   border-radius: 51px;
   color: white;
-  padding-left: 1rem;
+  padding-left: 2rem;
+  position: relative;
+}
+
+.attachment {
+  position: absolute;
+  color: white;
+  z-index: 99999999;
+  top: 1.8rem;
+  left: 1.5rem;
+  cursor: pointer;
+}
+
+.message-date {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  font-size: 12px !important;
+  font-family: cursive;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
 }
 
 .chat__input__section3 > button {
@@ -177,15 +262,26 @@ body {
 }
 
 .chat__messages {
-  height: 33.7rem;
+  height: 80vh;
   /* overflow: auto; */
   width: 100%;
   position: relative;
   background-color: #212121;
+  background-image: url("./assets/background_chat.png");
+}
+
+.image__user {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  -webkit-border-radius: 50%;
+  -moz-border-radius: 50%;
+  -ms-border-radius: 50%;
+  -o-border-radius: 50%;
 }
 
 .messageBox {
-  background-color: gainsboro;
+  /* background-color: gainsboro; */
   width: 70%;
   padding: 1vmax;
   margin: 1vmax;
@@ -206,11 +302,13 @@ body {
   float: right;
   background-color: #005c4b;
   color: white;
+  width: auto;
 }
 .left {
   float: left;
   background-color: #202c33;
   color: white;
+  width: auto;
 }
 
 .users__container {
@@ -218,10 +316,17 @@ body {
   flex-direction: column;
   gap: 0.4rem;
   background-color: #171717;
-  height: 100%;
+  height: 93vh;
   overflow-y: auto;
   overflow-x: hidden;
-  width: 15rem;
+  width: 100%;
+}
+
+.users__data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
 }
 
 .users__data > button {
@@ -237,17 +342,40 @@ body {
   background-color: #171717;
   color: white;
   font-family: cursive;
+  justify-content: flex-start;
+  text-transform: capitalize;
 }
 
 .users__data .active {
   background-color: #212121;
   color: white;
   border-radius: 8px;
-  width: 12rem;
   height: 100%;
   -webkit-border-radius: 8px;
   -moz-border-radius: 8px;
   -ms-border-radius: 8px;
   -o-border-radius: 8px;
   border: none;
+}
+
+.file__modal__container {
+  width: 76%;
+  height: 78vh;
+  color: white;
+  background-color: #202c33;
+  padding: 2rem;
+  margin: 0.5rem;
+}
+
+.file__name__img {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.file__modal__container > i {
+  float: right;
+  cursor: pointer;
 }

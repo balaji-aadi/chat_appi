@@ -1,5 +1,26 @@
 import { Server } from "socket.io";
 import db from "../db.config.js";
+import {
+  updateStatusDisconnectQuery,
+  updateStatusConnectionQuery,
+  messageInsertQuery,
+  fileInsertQuery,
+} from "../src/queries/chat.queries.js";
+// import { Redis } from "ioredis";
+
+// const pub = new Redis({
+//   host: "caching-2a45750e-balajiaade2000-6af0.i.aivencloud.com",
+//   port: 10231,
+//   username: "default",
+//   password: "AVNS_BVnT6Mqj8-oXIHPBHAv",
+// });
+
+// const sub = new Redis({
+//   host: "caching-2a45750e-balajiaade2000-6af0.i.aivencloud.com",
+//   port: 10231,
+//   username: "default",
+//   password: "AVNS_BVnT6Mqj8-oXIHPBHAv",
+// });
 
 class SocketService {
   constructor() {
@@ -14,6 +35,7 @@ class SocketService {
     });
 
     this._io = io;
+    // sub.subscribe("MESSAGES");
   }
 
   initListeners = async () => {
@@ -25,14 +47,10 @@ class SocketService {
     io.on("connect", (socket) => {
       socket.on("joined", async ({ user, storedSocketId, userId }) => {
         console.log(`${user} has joined now with socket id ${storedSocketId}`);
+        io.emit("user-connected", { userId });
 
         try {
-          const query = `
-            INSERT INTO status (user_id, is_active) VALUES ($1, $2)
-            ON CONFLICT (user_id) 
-            DO UPDATE SET is_active = EXCLUDED.is_active;
-          `;
-          io.emit("user-connected", { userId });
+          const query = updateStatusConnectionQuery;
           await client.query(query, [userId, true]);
           console.log(`User ${userId} status set to active`);
         } catch (err) {
@@ -41,10 +59,10 @@ class SocketService {
 
         socket.on("disconnect", async () => {
           console.log(`User with id ${userId} is currently disconnected!!`);
+          io.emit("user-disconnected", { userId });
 
           try {
-            const query = "UPDATE status SET is_active = $1 WHERE user_id = $2";
-            io.emit("user-disconnected", { userId });
+            const query = updateStatusDisconnectQuery;
             await client.query(query, [false, userId]);
             console.log(`User ${userId} status set to inactive`);
           } catch (err) {
@@ -68,17 +86,27 @@ class SocketService {
           console.log(
             `Message send by sender Id ${senderId} with socket id ${senderSocketId} and receiver id is ${receiverId} and socket id ${receiverSocketId} and message is ${message}`
           );
+
+          // publish this message to redis
+          // await pub.publish(
+          //   "MESSAGES",
+          //   JSON.stringify({
+          //     senderSocketId,
+          //     senderId,
+          //     receiverSocketId,
+          //     receiverId,
+          //     message,
+          //   })
+          // );
+
           io.emit("receive-message", {
-            senderSocketId,
             senderId,
-            receiverSocketId,
             receiverId,
             message,
           });
 
           try {
-            const query =
-              "INSERT INTO messages (sender_id, receiver_id, message) VALUES ($1, $2, $3)";
+            const query = messageInsertQuery;
             await client.query(query, [senderId, receiverId, message]);
             console.log("Message stored in database");
           } catch (err) {
@@ -86,7 +114,53 @@ class SocketService {
           }
         }
       );
+
+      socket.on("file-upload", async (fileData) => {
+        const { receiverId, senderId, filePath } = fileData;
+
+        console.log(
+          `user from id -> ${senderId} send the file to id -> ${receiverId} the file is ${filePath} `
+        );
+
+        io.emit("file-received", {
+          senderId,
+          receiverId,
+          filePath,
+        });
+
+        await client.query(fileInsertQuery, [senderId, receiverId, filePath]);
+        console.log("File info stored in database");
+      });
+
+      socket.on("typing", ({ sender, receiver }) => {
+        io.emit("typing", { user: sender, receiver: receiver });
+      });
+
+      socket.on("start-call", async ({ userId, receiverId }) => {
+        try {
+          const token = generateZegoToken(userId);
+          io.to(receiverId).emit("incoming-call", { userId, token });
+        } catch (err) {
+          console.error("Error initiating call:", err);
+        }
+      });
+
+      socket.on("accept-call", async ({ userId, callerId }) => {
+        try {
+          const token = generateZegoToken(userId);
+          io.to(callerId).emit("call-accepted", { userId, token });
+        } catch (err) {
+          console.error("Error accepting call:", err);
+        }
+      });
     });
+
+    // sub.on("message", (channel, message) => {
+    //   if (channel === "MESSAGES") {
+    //     const parsedMessage = JSON.parse(message);
+    //     io.emit("receive-message", parsedMessage);
+    //   }
+    // });
   };
 }
 
