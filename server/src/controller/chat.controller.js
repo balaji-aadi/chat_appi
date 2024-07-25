@@ -1,7 +1,7 @@
 import db from "../../db.config.js";
 import {
   findUserEmailQuery,
-  getFileDataQuery,
+  // getFileDataQuery,
   getMessagesQuery,
   getUserStatusQuery,
   updateUserDataQuery,
@@ -65,42 +65,33 @@ export const userStatusController = async (req, res) => {
   }
 };
 
-export const getFilesDataController = async (req, res) => {
-  const client = await db().connect();
-  try {
-    const result = await client.query(getFileDataQuery);
-    res.json(result.rows);
-  } catch (err) {
-    console.error("Error fetching messages:", err);
-    res.status(500).send("Server error");
-  }
-};
 
 export const fileUpload = async (req, res) => {
-  const file = req.file;
+  const files = req.files;
 
-  if (!file) {
-    return res.status(400).json({ message: "File not uploaded" });
+  if (!files || files.length === 0) {
+    return res.status(400).json({ message: "No files uploaded" });
   }
-
-  const localFilePath = file.path;
-
-  console.log("localFilePath is: ", localFilePath);
 
   try {
-    const cloudinaryResult = await uploadOnCloudinary(localFilePath);
+    // Map through each file and upload to Cloudinary
+    const uploadPromises = files.map(file => uploadOnCloudinary(file.path));
 
-    if (!cloudinaryResult) {
-      return res
-        .status(500)
-        .json({ message: "Failed to upload file to Cloudinary" });
+    // Wait for all uploads to complete
+    const cloudinaryResults = await Promise.all(uploadPromises);
+
+    // Check if all uploads were successful
+    if (cloudinaryResults.some(result => !result)) {
+      return res.status(500).json({ message: "Failed to upload some files to Cloudinary" });
     }
 
-    return res.status(200).json({ filePath: cloudinaryResult.secure_url });
+    // Extract the secure URLs from the Cloudinary results
+    const fileUrls = cloudinaryResults.map(result => result.secure_url);
+
+    return res.status(200).json({ filePaths: fileUrls });
   } catch (error) {
     console.error("Error uploading to Cloudinary:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error", error: error.message });
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+

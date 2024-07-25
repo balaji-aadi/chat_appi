@@ -13,6 +13,8 @@ import logo from "../assets/rabbit.jpg";
 import axios from "axios";
 import Loader from "./Loader";
 import { RxCross2 } from "react-icons/rx";
+import { ImageDisplay } from "./ImageDisplay";
+import { FaPlus } from "react-icons/fa";
 
 const Socket = () => {
   const { allMessages, setAllMessages } = useContext(MainContext);
@@ -23,12 +25,13 @@ const Socket = () => {
   const [activeUser, setActiveUser] = useState(null);
   const userId = parseInt(localStorage.getItem("id"));
   const [status, setStatus] = useState([]);
-  const [file, setFile] = useState(null);
+  const [file, setFiles] = useState([]);
   const [preview, setPreview] = useState("");
   const [typing, setTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
   const [fileData, setFileData] = useState([]);
   const [displayImage, setDisplayImage] = useState(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const socket = useMemo(() => {
     setStoredSocketId(localStorage.getItem("socketId"));
@@ -39,15 +42,15 @@ const Socket = () => {
   }, [storedSocketId]);
 
   // Fetch messages from the API
-  const fetchMessages = useCallback(async () => {
-    try {
-      const response = await fetch("http://localhost:8001/api/v1/get/messages");
-      const data = await response.json();
-      setAllMessages(data);
-    } catch (error) {
-      console.error("Error fetching messages:", error);
-    }
-  }, [setAllMessages]);
+  // const fetchMessages = useCallback(async () => {
+  //   try {
+  //     const response = await fetch("http://localhost:8001/api/v1/get/messages");
+  //     const data = await response.json();
+  //     setAllMessages(data);
+  //   } catch (error) {
+  //     console.error("Error fetching messages:", error);
+  //   }
+  // }, [setAllMessages]);
 
   const fetchAllUsers = useCallback(async () => {
     try {
@@ -80,79 +83,18 @@ const Socket = () => {
   }, []);
 
   useEffect(() => {
-    fetchMessages();
+    // fetchMessages();
     fetchAllUsers();
     fetchAllUsersStatus();
     fetchAllFiles();
-  }, [fetchAllFiles, fetchAllUsers, fetchAllUsersStatus, fetchMessages]);
+  }, [fetchAllFiles, fetchAllUsers, fetchAllUsersStatus]);
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setDisplayImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-    setFile(file);
-    setPreview(URL.createObjectURL(file));
+    const selectedImages = e.target.files;
+    setFiles((prevImages) => [...prevImages, ...selectedImages]);
+    setIsImageModalOpen(true);
+    e.target.value = null;
   };
-
-  // const handleMessage = () => {
-  //   const senderSocketId = localStorage.getItem("socketId");
-  //   const sender = users.find((item) => item.full_name === user);
-  //   const senderId = sender?.id;
-
-  //   const receiverId = activeUser?.id;
-  //   const receiverSocketId = activeUser?.socket_id;
-  //   const newMessage = {
-  //     senderSocketId,
-  //     senderId: senderId[0]?.id,
-  //     receiverSocketId,
-  //     receiverId,
-  //     message,
-  //   };
-
-  //   let newFileData = null;
-
-  //   if (file) {
-  //     const formData = new FormData();
-  //     formData.append("file", file);
-  //     formData.append("receiverId", receiverId);
-  //     formData.append("senderId", senderId[0]?.id);
-
-  //     axios
-  //       .post("http://localhost:8001/api/v1/upload", formData)
-  //       .then((response) => {
-  //         const filePath = response.data.filePath;
-
-  //         newFileData = {
-  //           receiverId,
-  //           senderId: senderId[0]?.id,
-  //           filePath,
-  //           preview,
-  //         };
-
-  //         socket.emit("file-upload", newFileData);
-  //         fetchMessages();
-  //         setFile(null);
-  //         setPreview(null);
-  //       })
-  //       .catch((error) => {
-  //         console.error("Error uploading file:", error);
-  //       });
-  //   } else {
-  //     socket.emit("message", newMessage);
-  //     fetchMessages();
-  //     setMessage("");
-  //   }
-
-  //   // socket.emit("message", newMessage);
-  //   // socket.emit("file-upload", newFileData);
-  //   // fetchMessages();
-  //   // setMessage("");
-  // };
 
   const handleMessage = async () => {
     const senderSocketId = localStorage.getItem("socketId");
@@ -170,63 +112,81 @@ const Socket = () => {
       message,
     };
 
-    let newFileData = null;
-
-    const uploadFile = async (file, senderId, receiverId) => {
+    // Function to upload files
+    const uploadFiles = async (files, senderId, receiverId) => {
+      setIsImageModalOpen(false);
       const formData = new FormData();
-      formData.append("file", file);
+
+      // Append each file to FormData
+      Array.from(files).forEach((file) => {
+        formData.append("files", file);
+      });
       formData.append("receiverId", receiverId);
       formData.append("senderId", senderId);
 
       try {
         const response = await axios.post(
           "http://localhost:8001/api/v1/upload",
-          formData
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
         );
-        const filePath = response.data.filePath;
+        const filePaths = response.data.filePaths;
+        console.log("filepaths are this >>>", filePaths);
 
-        return {
+        // Generate previews for each file
+        const preview = Array.from(files).map((file) => ({
           receiverId,
           senderId,
-          filePath,
-          preview,
-        };
+          filePath: filePaths.map((fp) => fp),
+          preview: URL.createObjectURL(file),
+        }));
+
+        console.log("preview is >>>", preview);
+
+        return preview;
       } catch (error) {
-        console.error("Error uploading file:", error);
+        console.error("Error uploading files:", error);
         throw error;
       }
     };
 
-    if (file && !message) {
-      try {
-        newFileData = await uploadFile(file, senderId, receiverId);
-        socket.emit("file-upload", newFileData);
-        setFile(null);
+    try {
+      // Handle file upload and message sending
+      if (file?.length > 0) {
+        const newFileData = await uploadFiles(file, senderId, receiverId);
+        newFileData.forEach((fileData) => {
+          socket.emit("file-upload", fileData);
+        });
+        setFiles(null);
         setPreview(null);
-      } catch (error) {
-        return;
       }
-    }
 
-    if (message && !file) {
-      socket.emit("message", newMessage);
-      setMessage("");
-    }
+      if (message) {
+        socket.emit("message", newMessage);
+        socket.on("get-all-messages", (msg) => {
+          console.log("message of all are : ", msg);
+          setAllMessages(msg);
+        });
+        setMessage("");
+      }
 
-    if (file && message) {
-      try {
-        newFileData = await uploadFile(file, senderId, receiverId);
-        socket.emit("file-upload", newFileData);
-        setFile(null);
+      if (file?.length > 0 && message) {
+        const newFileData = await uploadFiles(file, senderId, receiverId);
+        newFileData.forEach((fileData) => {
+          socket.emit("file-upload", fileData);
+        });
+        socket.emit("message", newMessage);
+        setMessage("");
+        setFiles(null);
         setPreview(null);
-      } catch (error) {
-        return;
       }
-      socket.emit("message", newMessage);
-      setMessage("");
+    } catch (error) {
+      console.error("Error handling message:", error);
     }
-
-    fetchMessages();
   };
 
   const navigate = useNavigate();
@@ -247,10 +207,20 @@ const Socket = () => {
   }, [navigate, user]);
 
   useEffect(() => {
+    if (file?.length < 1) {
+      setIsImageModalOpen(false);
+    }
+  }, [file]);
+
+  useEffect(() => {
     socket.on("receive-message", () => {
-      fetchMessages();
+      // fetchMessages();
+      socket.on("get-all-messages", (msg) => {
+        console.log("message of all are : ", msg);
+        setAllMessages(msg);
+      });
     });
-  }, [fetchMessages, socket]);
+  }, [setAllMessages, socket]);
 
   useEffect(() => {
     if (!storedSocketId) {
@@ -261,6 +231,10 @@ const Socket = () => {
     }
 
     socket.emit("joined", { user, storedSocketId, userId });
+    socket.on("get-all-messages", (msg) => {
+      console.log("message of all are : ", msg);
+      setAllMessages(msg);
+    });
 
     if (!user) {
       socket.off();
@@ -279,7 +253,7 @@ const Socket = () => {
       localStorage.removeItem("user");
       localStorage.removeItem("id");
     };
-  }, [socket, storedSocketId, user, userId]);
+  }, [setAllMessages, socket, storedSocketId, user, userId]);
 
   useEffect(() => {
     socket.on("user-connected", () => {
@@ -344,31 +318,6 @@ const Socket = () => {
       return groupedMessages;
     }, {});
   };
-  const groupFileMessagesByDate = (messages) => {
-    return messages.reduce((groupedMessages, message) => {
-      const date = new Date(message.created_at);
-      const today = moment().startOf("day");
-      const messageDate = moment(date).startOf("day");
-      let dateKey;
-
-      if (messageDate.isSame(today, "day")) {
-        dateKey = "Today";
-      } else if (messageDate.isSame(today.clone().subtract(1, "day"), "day")) {
-        dateKey = "Yesterday";
-      } else if (messageDate.isSame(today, "week")) {
-        dateKey = messageDate.format("dddd");
-      } else {
-        dateKey = messageDate.format("DD MMMM YYYY");
-      }
-
-      if (!groupedMessages[dateKey]) {
-        groupedMessages[dateKey] = [];
-      }
-      groupedMessages[dateKey].push(message);
-
-      return groupedMessages;
-    }, {});
-  };
 
   const groupedMessages = groupMessagesByDate(
     allMessages.filter(
@@ -377,44 +326,15 @@ const Socket = () => {
         (item.sender_id === userId && item.receiver_id === activeUser?.id)
     )
   );
-  const groupedFileMessages = groupFileMessagesByDate(
-    fileData.filter(
-      (item) =>
-        (item.receiverid === userId && item.senderid === activeUser?.id) ||
-        (item.senderid === userId && item.receiverid === activeUser?.id)
-    )
-  );
 
-  const mergedGroupedMessages = {};
-
-  // Function to merge grouped messages by date
-  const mergeGroupedMessages = (source) => {
-    Object.entries(source).forEach(([date, messages]) => {
-      if (!mergedGroupedMessages[date]) {
-        mergedGroupedMessages[date] = [];
-      }
-      mergedGroupedMessages[date] =
-        mergedGroupedMessages[date].concat(messages);
-    });
-  };
-
-  // Merge both grouped messages and file messages
-  mergeGroupedMessages(groupedMessages);
-  mergeGroupedMessages(groupedFileMessages);
-
-  console.log("mergedGroupedMessages", mergedGroupedMessages);
-
-  // Create a single array with dates and messages
   const messagesWithDates = [];
 
-  Object.entries(mergedGroupedMessages).forEach(([date, messages]) => {
+  Object.entries(groupedMessages).forEach(([date, messages]) => {
     messagesWithDates.push({ type: "date", date });
     messages.forEach((message) => {
       messagesWithDates.push({ type: "message", ...message });
     });
   });
-
-  console.log("messagesWithDates", messagesWithDates);
 
   const handleTyping = () => {
     const senderId = users.filter((item) =>
@@ -424,6 +344,8 @@ const Socket = () => {
     const receiverId = activeUser?.id;
     socket.emit("typing", { sender: senderId, receiver: receiverId });
   };
+
+  console.log(file);
 
   return (
     <main className="main__container">
@@ -477,7 +399,7 @@ const Socket = () => {
                 </span>
               )}
             </section>
-            {!file ? (
+            {!isImageModalOpen ? (
               <ReactScrollToBottom className="chat__messages">
                 {messagesWithDates.map((item, ind) =>
                   item.type === "date" ? (
@@ -502,17 +424,29 @@ const Socket = () => {
               </ReactScrollToBottom>
             ) : (
               <section className="file__modal__container">
-                <i>
-                  <RxCross2 onClick={() => setFile(null)} />
+                <i onClick={() => setIsImageModalOpen(false)}>
+                  <RxCross2 />
                 </i>
                 <div className="file__name__img">
-                  <span>{file.name}</span>
-                  <img
-                    src={displayImage}
-                    alt="Selected"
-                    style={{ width: "500px", height: "auto" }}
-                  />
+                  <span>{file?.name}</span>
+
+                  <div className="image__display">
+                    {file.map((image, index) => (
+                      <div key={index} className="images__storing__container">
+                        <ImageDisplay
+                          image={image}
+                          setFiles={setFiles}
+                          index={index}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
+                <section className="multiple__images__add__remove">
+                  <label htmlFor="attachment" className="multiple__images__add">
+                    <FaPlus />
+                  </label>
+                </section>
               </section>
             )}
             {activeUser && (
@@ -520,11 +454,14 @@ const Socket = () => {
                 <label htmlFor="attachment" className="attachment">
                   <CgAttachment />
                 </label>
+
                 <input
                   type="file"
                   id="attachment"
+                  name="image"
+                  multiple
+                  onChange={(e) => handleFileChange(e)}
                   style={{ display: "none" }}
-                  onChange={handleFileChange}
                 />
 
                 <textarea
@@ -552,7 +489,6 @@ const Socket = () => {
             }}
           >
             Welcome to chat Appi
-            <img src={`http://localhost:8001${fileData[0]?.file}`} alt="img" />
           </section>
         )}
 

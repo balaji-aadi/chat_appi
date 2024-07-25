@@ -373,9 +373,53 @@ body {
   align-items: center;
   justify-content: center;
   gap: 2rem;
+  width: 100%;
 }
 
 .file__modal__container > i {
   float: right;
   cursor: pointer;
 }
+
+.image__display{
+  overflow: auto;
+  height: 50vh;
+}
+
+.multiple__images__add {
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  margin: 2rem 0rem;
+  cursor: pointer;
+}
+
+.images__container{
+  position: relative;
+}
+
+.images__container:hover{
+  cursor: pointer;
+}
+
+.fImage:hover{
+  opacity: 0.2;
+}
+
+.image__active{
+  opacity: 0.2;
+}
+
+.deleteImages{
+  font-size: 3rem;
+  position: absolute;
+  top: 40%;
+  left: 45%;
+ 
+}
+
+
