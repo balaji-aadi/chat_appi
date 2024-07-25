@@ -9,7 +9,6 @@ export const getMessagesQuery =
 
 export const getUserStatusQuery = "SELECT * FROM status";
 
-export const getFileDataQuery = "SELECT * FROM files ORDER BY created_at ASC";
 
 export const updateStatusConnectionQuery = `
             INSERT INTO status (user_id, is_active) VALUES ($1, $2)
@@ -24,4 +23,4 @@ export const messageInsertQuery =
   "INSERT INTO messages (sender_id, receiver_id, message) VALUES ($1, $2, $3)";
 
 export const fileInsertQuery =
-  "INSERT INTO files (senderId, receiverId, file) VALUES ($1, $2, $3)";
+  "INSERT INTO messages (sender_id, receiver_id , file) VALUES ($1, $2, $3)";

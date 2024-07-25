@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   fileUpload,
   generateSocketId,
-  getFilesDataController,
+  // getFilesDataController,
   messageController,
   userStatusController,
 } from "../controller/chat.controller.js";
@@ -13,7 +13,6 @@ const router = Router();
 router.route("/generate-socketId").post(generateSocketId);
 router.route("/get/messages").get(messageController);
 router.route("/get/status").get(userStatusController);
-router.route("/get/files").get(getFilesDataController);
-router.route("/upload").post(upload.single("file"), fileUpload);
+router.route("/upload").post(upload.array("files", 10), fileUpload);
 
 export default router;

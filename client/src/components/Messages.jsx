@@ -2,7 +2,8 @@ import "../App.css";
 import moment from "moment";
 
 // eslint-disable-next-line react/prop-types
-const Messages = ({ user, time_date, message, classs }) => {
+const Messages = ({ user, time_date, message, classs,file }) => {
+  console.log(message)
   if (user && user !== "date") {
     return (
       <main className={`messageBox ${classs}`}>
@@ -25,7 +26,23 @@ const Messages = ({ user, time_date, message, classs }) => {
     );
   } else if (user === "date") {
     return <main className={`messageBox ${classs}`}>{message}</main>;
-  } else {
+  } else if (file) {
+    return <main className={`messageBox ${classs}`}>
+      <img src={message} alt="img" className="message__image"/>
+      <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            fontSize: "10px",
+            paddingLeft: "2rem",
+          }}
+        >
+          {`${moment(time_date).format("LT")}`}
+        </span>
+        
+    </main>
+  }else {
     return (
       <main className={`messageBox ${classs}`}>
         <span>{`${message}`}</span>
