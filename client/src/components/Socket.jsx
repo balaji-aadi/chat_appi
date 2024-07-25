@@ -26,12 +26,14 @@ const Socket = () => {
   const userId = parseInt(localStorage.getItem("id"));
   const [status, setStatus] = useState([]);
   const [file, setFiles] = useState([]);
-  const [preview, setPreview] = useState("");
+  const [preview, setPreview] = useState([]);
   const [typing, setTyping] = useState(false);
   const [typingUser, setTypingUser] = useState("");
   const [fileData, setFileData] = useState([]);
   const [displayImage, setDisplayImage] = useState(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState();
 
   const socket = useMemo(() => {
     setStoredSocketId(localStorage.getItem("socketId"));
@@ -40,17 +42,6 @@ const Socket = () => {
       : {};
     return io("http://localhost:8001", options);
   }, [storedSocketId]);
-
-  // Fetch messages from the API
-  // const fetchMessages = useCallback(async () => {
-  //   try {
-  //     const response = await fetch("http://localhost:8001/api/v1/get/messages");
-  //     const data = await response.json();
-  //     setAllMessages(data);
-  //   } catch (error) {
-  //     console.error("Error fetching messages:", error);
-  //   }
-  // }, [setAllMessages]);
 
   const fetchAllUsers = useCallback(async () => {
     try {
@@ -83,17 +74,76 @@ const Socket = () => {
   }, []);
 
   useEffect(() => {
-    // fetchMessages();
     fetchAllUsers();
     fetchAllUsersStatus();
     fetchAllFiles();
   }, [fetchAllFiles, fetchAllUsers, fetchAllUsersStatus]);
 
   const handleFileChange = (e) => {
-    const selectedImages = e.target.files;
+    const selectedImages = Array.from(e.target.files);
     setFiles((prevImages) => [...prevImages, ...selectedImages]);
-    setIsImageModalOpen(true);
+
+    const readFiles = selectedImages.map((file) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve(reader.result);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readFiles).then((newPreviews) => {
+      setPreview((prevPreviews) => [...prevPreviews, ...newPreviews]);
+      setIsImageModalOpen(true);
+    });
+
     e.target.value = null;
+  };
+
+  // Function to upload file
+  const uploadFiles = async (files, senderId, receiverId) => {
+    setIsImageModalOpen(false);
+    const formData = new FormData();
+
+    Array.from(files).forEach((file) => {
+      formData.append("files", file);
+    });
+    formData.append("receiverId", receiverId);
+    formData.append("senderId", senderId);
+
+    try {
+      const response = await axios.post(
+        "http://localhost:8001/api/v1/upload",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+          onUploadProgress: (progressEvent) => {
+            const progress = (progressEvent.loaded / progressEvent.total) * 100;
+            console.log("file uploading progress is : ", progress);
+            setProgress(progress);
+          },
+        }
+      );
+      const filePaths = response.data.filePaths;
+
+      Array.from(files).map((file) => ({
+        preview: URL.createObjectURL(file),
+      }));
+
+      const preview = filePaths.map((item) => ({
+        receiverId,
+        senderId,
+        filePath: item,
+      }));
+
+      return preview;
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      throw error;
+    }
   };
 
   const handleMessage = async () => {
@@ -112,77 +162,45 @@ const Socket = () => {
       message,
     };
 
-    // Function to upload files
-    const uploadFiles = async (files, senderId, receiverId) => {
-      setIsImageModalOpen(false);
-      const formData = new FormData();
-
-      // Append each file to FormData
-      Array.from(files).forEach((file) => {
-        formData.append("files", file);
-      });
-      formData.append("receiverId", receiverId);
-      formData.append("senderId", senderId);
-
-      try {
-        const response = await axios.post(
-          "http://localhost:8001/api/v1/upload",
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-        const filePaths = response.data.filePaths;
-        console.log("filepaths are this >>>", filePaths);
-
-        // Generate previews for each file
-        const preview = Array.from(files).map((file) => ({
-          receiverId,
-          senderId,
-          filePath: filePaths.map((fp) => fp),
-          preview: URL.createObjectURL(file),
-        }));
-
-        console.log("preview is >>>", preview);
-
-        return preview;
-      } catch (error) {
-        console.error("Error uploading files:", error);
-        throw error;
-      }
-    };
-
     try {
-      // Handle file upload and message sending
-      if (file?.length > 0) {
-        const newFileData = await uploadFiles(file, senderId, receiverId);
-        newFileData.forEach((fileData) => {
-          socket.emit("file-upload", fileData);
-        });
-        setFiles(null);
-        setPreview(null);
+      if (file?.length > 0 && !message) {
+        setIsLoading(true);
+        try {
+          const newFileData = await uploadFiles(file, senderId, receiverId);
+          newFileData.forEach((fileData) => {
+            socket.emit("file-upload", fileData);
+          });
+        } catch (err) {
+          console.log(err);
+        } finally {
+          setIsLoading(false);
+          setFiles([]);
+          setPreview([]);
+        }
       }
 
-      if (message) {
+      if (message && file?.length <= 0) {
         socket.emit("message", newMessage);
-        socket.on("get-all-messages", (msg) => {
-          console.log("message of all are : ", msg);
-          setAllMessages(msg);
-        });
         setMessage("");
       }
 
       if (file?.length > 0 && message) {
-        const newFileData = await uploadFiles(file, senderId, receiverId);
-        newFileData.forEach((fileData) => {
-          socket.emit("file-upload", fileData);
-        });
+        setIsLoading(true);
         socket.emit("message", newMessage);
         setMessage("");
-        setFiles(null);
-        setPreview(null);
+        try {
+          const newFileData = await uploadFiles(file, senderId, receiverId);
+
+          newFileData.forEach((fileData) => {
+            socket.emit("file-upload", fileData);
+          });
+        } catch (err) {
+          console.log(err);
+        } finally {
+          setFiles([]);
+          setPreview([]);
+          setIsLoading(false);
+        }
       }
     } catch (error) {
       console.error("Error handling message:", error);
@@ -190,6 +208,7 @@ const Socket = () => {
   };
 
   const navigate = useNavigate();
+  console.log(file);
 
   const handleLogout = () => {
     localStorage.removeItem("socketId");
@@ -214,9 +233,8 @@ const Socket = () => {
 
   useEffect(() => {
     socket.on("receive-message", () => {
-      // fetchMessages();
       socket.on("get-all-messages", (msg) => {
-        console.log("message of all are : ", msg);
+        // console.log("message of all are : ", msg);
         setAllMessages(msg);
       });
     });
@@ -232,7 +250,6 @@ const Socket = () => {
 
     socket.emit("joined", { user, storedSocketId, userId });
     socket.on("get-all-messages", (msg) => {
-      console.log("message of all are : ", msg);
       setAllMessages(msg);
     });
 
@@ -271,12 +288,10 @@ const Socket = () => {
 
   useEffect(() => {
     socket.on("typing", (data) => {
-      console.log(data);
       if (data.receiver === userId) {
         setTypingUser(data.user);
         setTyping(true);
         setTimeout(() => setTyping(false), 3000);
-        console.log(data);
       }
     });
 
@@ -345,7 +360,8 @@ const Socket = () => {
     socket.emit("typing", { sender: senderId, receiver: receiverId });
   };
 
-  console.log(file);
+  console.log(preview);
+  console.log(messagesWithDates);
 
   return (
     <main className="main__container">
@@ -409,6 +425,15 @@ const Socket = () => {
                       message={item.date}
                       classs={"message-date"}
                     />
+                  ) : item.file ? (
+                    <Messages
+                      key={ind}
+                      
+                      message={item.file}
+                      time_date={item.created_at}
+                      classs={item.sender_id === userId ? "right" : "left"}
+                      file = {true}
+                    />
                   ) : (
                     <Messages
                       key={ind}
@@ -421,6 +446,25 @@ const Socket = () => {
                     />
                   )
                 )}
+
+                {isLoading && progress ? 
+                preview.map((src, index) => (
+                      <img
+                        key={index}
+                        src={src}
+                        alt={`Preview ${index}`}
+                        loading="lazy"
+                        style={{
+                          backgroundImage: isLoading
+                            ? "url(https://ucarecdn.com/faff2888-016b-4c54-9870-25f9a21129f5/-/preview/1600x900/-/blur/500/)"
+                            : src,
+                            filter: isLoading ? `blur(${(1 - progress / 100) * 10}px)` : 'none',
+                        }}
+                        className={`preview__image ${isLoading ? 'loading' : ''}`}
+                      />
+                    ))
+                  : null}
+                  
               </ReactScrollToBottom>
             ) : (
               <section className="file__modal__container">
